@@ -1,11 +1,6 @@
-using Sfs2X;
-using Sfs2X.Core;
-using Sfs2X.Requests;
-using Sfs2X.Util;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class Login : MonoBehaviour
 {
@@ -37,6 +32,10 @@ public class Login : MonoBehaviour
     private void LoginState(bool value)
     {
         Debug.Log("User is login: " + value);
+        if (value)
+        {
+            SceneManager.LoadScene(SceneName.LOBBY);
+        }
     }
 
     private void OnDestroy()
