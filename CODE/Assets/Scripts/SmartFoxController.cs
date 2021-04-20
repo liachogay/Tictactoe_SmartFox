@@ -1,6 +1,7 @@
 using Sfs2X;
 using Sfs2X.Core;
 using Sfs2X.Entities;
+using Sfs2X.Entities.Data;
 using Sfs2X.Requests;
 using Sfs2X.Util;
 using UnityEngine;
@@ -58,6 +59,9 @@ public class SmartFoxController
     public delegate void RoomRemove(int idRoom);
     public static RoomRemove OnRoomRemoved = null;
 
+    public delegate void EnemyMove(int x, int y);
+    public static EnemyMove OnEnemyMove = null;
+
     public void LoginRequest(string userName)
     {
         name = userName;
@@ -71,7 +75,7 @@ public class SmartFoxController
 
     public void CreateRoomRequest(string roomName = "")
     {
-        SmartFox.Send(new CreateRoomRequest(GetRoomSettings(roomName), true));
+        SmartFox.Send(new CreateRoomRequest(GetRoomSettings(roomName), true, SmartFox.LastJoinedRoom));
     }
 
     public void JoinRoomRequest(int idRoom)
@@ -84,6 +88,14 @@ public class SmartFoxController
     {
         SmartFox.Send(new LeaveRoomRequest());
         UnityEngine.SceneManagement.SceneManager.LoadScene(SceneName.LOBBY);
+    }
+
+    public void SendMoveToEnemy(int x, int y)
+    {
+        ISFSObject sFS = new SFSObject();
+        sFS.PutInt("x", x);
+        sFS.PutInt("y", y);
+        SmartFox.Send(new ExtensionRequest("move", sFS, SmartFox.LastJoinedRoom));
     }
 
     public void Initialize()
@@ -105,7 +117,9 @@ public class SmartFoxController
             SmartFox.AddEventListener(SFSEvent.ROOM_JOIN, OnRoomJoin);
             SmartFox.AddEventListener(SFSEvent.ROOM_JOIN_ERROR, OnRoomJoinError);
             SmartFox.AddEventListener(SFSEvent.ROOM_REMOVE, OnRoomRemove);
+            SmartFox.AddEventListener(SFSEvent.USER_ENTER_ROOM, OnUserEnterRoom);
             SmartFox.AddEventListener(SFSEvent.USER_EXIT_ROOM, OnUserExitRoom);
+            SmartFox.AddEventListener(SFSEvent.EXTENSION_RESPONSE, OnExtensionResponse);
 
             SmartFox.Connect(IP, PORT);
 
@@ -185,7 +199,7 @@ public class SmartFoxController
 
     private void OnRoomJoinError(BaseEvent evt)
     {
-        Debug.Log("Join room error: " + evt.Params["reason"]);
+        Debug.Log("Join room error: " + evt.Params["errorMessage"]);
     }
 
     private void OnRoomRemove(BaseEvent evt)
@@ -202,6 +216,33 @@ public class SmartFoxController
         Room room = (Room)(evt.Params["room"]);
         User user = (User)(evt.Params["user"]);
         Debug.Log(user.Name + " leave room " + room.Name);
+    }
+
+    private void OnUserEnterRoom(BaseEvent evt)
+    {
+        Room room = (Room)(evt.Params["room"]);
+        User user = (User)(evt.Params["user"]);
+        Debug.Log(user.Name + " leave room " + room.Name);
+    }
+
+    private void OnExtensionResponse(BaseEvent evt)
+    {
+        string cmd = (string)(evt.Params["cmd"]);
+
+        ISFSObject sfs = (SFSObject)(evt.Params["params"]);
+
+        switch (cmd)
+        {
+            case "move":
+                //true is empty
+                if (OnEnemyMove != null)
+                {
+                    OnEnemyMove(sfs.GetInt("x"), sfs.GetInt("y"));
+                }
+                break;
+            case "getSpotEmpty":
+                break;
+        }
     }
 
     public RoomSettings GetRoomSettings(string roomName)
@@ -231,6 +272,7 @@ public class SmartFoxController
         SmartFox.RemoveEventListener(SFSEvent.ROOM_JOIN, OnRoomJoin);
         SmartFox.RemoveEventListener(SFSEvent.ROOM_JOIN_ERROR, OnRoomJoinError);
         SmartFox.RemoveEventListener(SFSEvent.ROOM_REMOVE, OnRoomRemove);
+        SmartFox.RemoveEventListener(SFSEvent.USER_ENTER_ROOM, OnUserEnterRoom);
         SmartFox.RemoveEventListener(SFSEvent.USER_EXIT_ROOM, OnUserExitRoom);
 
         SmartFox.Disconnect();
