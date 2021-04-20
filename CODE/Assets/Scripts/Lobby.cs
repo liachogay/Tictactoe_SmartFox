@@ -27,6 +27,11 @@ public class Lobby : MonoBehaviour
         SmartFoxController.OnRoomRemoved -= _RemoveRoom;
     }
 
+    private void Start()
+    {
+        _ShowListRoom();
+    }
+
     public void SentChatPress()
     {
         SmartFoxController.Instance.PublicMessageRequest(_inputChat.text);
@@ -38,6 +43,11 @@ public class Lobby : MonoBehaviour
         SmartFoxController.Instance.CreateRoomRequest();
     }
 
+    /// <summary>
+    /// show room created and new room added
+    /// </summary>
+    /// <param name="idRoom"></param>
+    /// <param name="nameroom"></param>
     private void _ShowListRoom(int idRoom, string nameroom)
     {
         if (_dictIdToObjectRoom.ContainsKey(idRoom))
@@ -47,17 +57,34 @@ public class Lobby : MonoBehaviour
         }
         foreach (var item in SmartFoxController.Instance.SmartFox.RoomList)
         {
+            if (item.IsHidden || !item.IsGame || item.IsPasswordProtected || _dictIdToObjectRoom.ContainsKey(idRoom)) continue;
+            Button button = Instantiate(_joinRoomButton, _parentContentRoom);
+            Text text = button.GetComponentInChildren<Text>();
+            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(item.Id));
+            text.text = item.Name;
+            Canvas.ForceUpdateCanvases();
+            _scrollRectRoom.verticalNormalizedPosition = 0f;
+            if (!_dictIdToObjectRoom.ContainsKey(idRoom))
+            {
+                _dictIdToObjectRoom.Add(idRoom, button.gameObject);
+            }
+        }
+    }
+
+    /// <summary>
+    /// init list room
+    /// </summary>
+    private void _ShowListRoom()
+    {
+        foreach (var item in SmartFoxController.Instance.SmartFox.RoomList)
+        {
             if (item.IsHidden || !item.IsGame || item.IsPasswordProtected) continue;
             Button button = Instantiate(_joinRoomButton, _parentContentRoom);
             Text text = button.GetComponentInChildren<Text>();
-            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(idRoom));
-            text.text = nameroom;
+            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(item.Id));
+            text.text = item.Name;
             Canvas.ForceUpdateCanvases();
             _scrollRectRoom.verticalNormalizedPosition = 0f;
-            if (_dictIdToObjectRoom.ContainsKey(idRoom))
-            {
-                _dictIdToObjectRoom.Add(idRoom, text.gameObject);
-            }
         }
     }
 

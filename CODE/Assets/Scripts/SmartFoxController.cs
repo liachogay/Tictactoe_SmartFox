@@ -71,13 +71,19 @@ public class SmartFoxController
 
     public void CreateRoomRequest(string roomName = "")
     {
-        SmartFox.Send(new CreateRoomRequest(GetRoomSettings(roomName)));
+        SmartFox.Send(new CreateRoomRequest(GetRoomSettings(roomName), true));
     }
 
     public void JoinRoomRequest(int idRoom)
     {
         Debug.Log("Press join room: " + idRoom);
         SmartFox.Send(new JoinRoomRequest(idRoom));
+    }
+
+    public void LeaveRoomRequest()
+    {
+        SmartFox.Send(new LeaveRoomRequest());
+        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneName.LOBBY);
     }
 
     public void Initialize()
@@ -99,6 +105,7 @@ public class SmartFoxController
             SmartFox.AddEventListener(SFSEvent.ROOM_JOIN, OnRoomJoin);
             SmartFox.AddEventListener(SFSEvent.ROOM_JOIN_ERROR, OnRoomJoinError);
             SmartFox.AddEventListener(SFSEvent.ROOM_REMOVE, OnRoomRemove);
+            SmartFox.AddEventListener(SFSEvent.USER_EXIT_ROOM, OnUserExitRoom);
 
             SmartFox.Connect(IP, PORT);
 
@@ -160,23 +167,41 @@ public class SmartFoxController
     private void OnRoomAdd(BaseEvent evt)
     {
         Room room = (Room)(evt.Params["room"]);
-        OnRoomAdded(room.Id, room.Name);
+        if (OnRoomAdded != null)
+        {
+            OnRoomAdded(room.Id, room.Name);
+        }
     }
 
     private void OnRoomJoin(BaseEvent evt)
     {
-
+        Room room = (Room)(evt.Params["room"]);
+        Debug.Log("Join room: " + room.Name);
+        if (room.Name != "The Lobby")
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(SceneName.GAME);
+        }
     }
 
     private void OnRoomJoinError(BaseEvent evt)
     {
-
+        Debug.Log("Join room error: " + evt.Params["reason"]);
     }
 
     private void OnRoomRemove(BaseEvent evt)
     {
         Room room = (Room)(evt.Params["room"]);
-        OnRoomRemoved(room.Id);
+        if (OnRoomRemoved != null)
+        {
+            OnRoomRemoved(room.Id);
+        }
+    }
+
+    private void OnUserExitRoom(BaseEvent evt)
+    {
+        Room room = (Room)(evt.Params["room"]);
+        User user = (User)(evt.Params["user"]);
+        Debug.Log(user.Name + " leave room " + room.Name);
     }
 
     public RoomSettings GetRoomSettings(string roomName)
@@ -201,6 +226,12 @@ public class SmartFoxController
         SmartFox.RemoveEventListener(SFSEvent.CONNECTION_LOST, OnConnectionLost);
         SmartFox.RemoveEventListener(SFSEvent.LOGIN, OnLogin);
         SmartFox.RemoveEventListener(SFSEvent.LOGIN_ERROR, OnLoginError);
+        SmartFox.RemoveEventListener(SFSEvent.PUBLIC_MESSAGE, OnPublicMessage);
+        SmartFox.RemoveEventListener(SFSEvent.ROOM_ADD, OnRoomAdd);
+        SmartFox.RemoveEventListener(SFSEvent.ROOM_JOIN, OnRoomJoin);
+        SmartFox.RemoveEventListener(SFSEvent.ROOM_JOIN_ERROR, OnRoomJoinError);
+        SmartFox.RemoveEventListener(SFSEvent.ROOM_REMOVE, OnRoomRemove);
+        SmartFox.RemoveEventListener(SFSEvent.USER_EXIT_ROOM, OnUserExitRoom);
 
         SmartFox.Disconnect();
         UnityEngine.SceneManagement.SceneManager.LoadScene(SceneName.LOGIN);
