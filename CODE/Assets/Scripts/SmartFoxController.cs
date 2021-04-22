@@ -2,8 +2,10 @@ using Sfs2X;
 using Sfs2X.Core;
 using Sfs2X.Entities;
 using Sfs2X.Entities.Data;
+using Sfs2X.Entities.Variables;
 using Sfs2X.Requests;
 using Sfs2X.Util;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SmartFoxController
@@ -42,6 +44,7 @@ public class SmartFoxController
     const string zone = "BasicExamples";
 
     private string name = "";
+    private int IDPlayer = -1;
 
     private SmartFoxController()
     {
@@ -59,8 +62,14 @@ public class SmartFoxController
     public delegate void RoomRemove(int idRoom);
     public static RoomRemove OnRoomRemoved = null;
 
-    public delegate void EnemyMove(int x, int y);
+    public delegate void EnemyMove(int x, int y, string text);
     public static EnemyMove OnEnemyMove = null;
+
+    public delegate void SetBoardEnable(bool[] boolArray);
+    public static SetBoardEnable OnSetBoardEnable = null;
+
+    public delegate void StartGame(int turnPlayer, int idPlayer1, int idPlayer2, string namePlayer1, string namePlayer2);
+    public static StartGame OnStartGame = null;
 
     public void LoginRequest(string userName)
     {
@@ -75,18 +84,20 @@ public class SmartFoxController
 
     public void CreateRoomRequest(string roomName = "")
     {
-        SmartFox.Send(new CreateRoomRequest(GetRoomSettings(roomName), true, SmartFox.LastJoinedRoom));
+        RoomSettings roomSettings = GetRoomSettings(roomName);
+        SmartFox.Send(new CreateRoomRequest(roomSettings, true, SmartFox.LastJoinedRoom));
     }
 
     public void JoinRoomRequest(int idRoom)
     {
         Debug.Log("Press join room: " + idRoom);
-        SmartFox.Send(new JoinRoomRequest(idRoom));
+        SmartFox.Send(new JoinRoomRequest(idRoom, "", SmartFox.LastJoinedRoom.Id, false));
     }
 
     public void LeaveRoomRequest()
     {
-        SmartFox.Send(new LeaveRoomRequest());
+        //SmartFox.Send(new LeaveRoomRequest());
+        SmartFox.Send(new JoinRoomRequest("The Lobby"));
         UnityEngine.SceneManagement.SceneManager.LoadScene(SceneName.LOBBY);
     }
 
@@ -120,6 +131,7 @@ public class SmartFoxController
             SmartFox.AddEventListener(SFSEvent.USER_ENTER_ROOM, OnUserEnterRoom);
             SmartFox.AddEventListener(SFSEvent.USER_EXIT_ROOM, OnUserExitRoom);
             SmartFox.AddEventListener(SFSEvent.EXTENSION_RESPONSE, OnExtensionResponse);
+            SmartFox.AddEventListener(SFSEvent.ROOM_VARIABLES_UPDATE, OnRoomVariableUpdate);
 
             SmartFox.Connect(IP, PORT);
 
@@ -159,7 +171,6 @@ public class SmartFoxController
         User user = (User)(evt.Params["user"]);
 
         name = user.Name;
-
         if (SmartFox.RoomList.Count > 0)
         {
             SmartFox.Send(new JoinRoomRequest(SmartFox.RoomList[0]));
@@ -193,6 +204,7 @@ public class SmartFoxController
         Debug.Log("Join room: " + room.Name);
         if (room.Name != "The Lobby")
         {
+            SmartFox.Send(new ExtensionRequest("ready", new SFSObject(), SmartFox.LastJoinedRoom));
             UnityEngine.SceneManagement.SceneManager.LoadScene(SceneName.GAME);
         }
     }
@@ -222,7 +234,16 @@ public class SmartFoxController
     {
         Room room = (Room)(evt.Params["room"]);
         User user = (User)(evt.Params["user"]);
-        Debug.Log(user.Name + " leave room " + room.Name);
+        Debug.Log(user.Name + " enter room " + room.Name);
+    }
+
+    private void OnRoomVariableUpdate(BaseEvent evt)
+    {
+        List<string> changedVar = (List<string>)evt.Params["changedVars"];
+        foreach (var item in changedVar)
+        {
+            Debug.Log(item);
+        }
     }
 
     private void OnExtensionResponse(BaseEvent evt)
@@ -237,10 +258,32 @@ public class SmartFoxController
                 //true is empty
                 if (OnEnemyMove != null)
                 {
-                    OnEnemyMove(sfs.GetInt("x"), sfs.GetInt("y"));
+                    OnEnemyMove(sfs.GetInt("x"), sfs.GetInt("y"), sfs.GetUtfString("text"));
+                }
+                if (sfs.GetInt("sender") == SmartFox.MySelf.Id)
+                {
+                    if (OnSetBoardEnable != null)
+                    {
+                        OnSetBoardEnable(null);
+                    }
                 }
                 break;
             case "getSpotEmpty":
+                if (OnSetBoardEnable != null)
+                {
+                    OnSetBoardEnable(sfs.GetBoolArray("boardEmpty"));
+                }
+                break;
+            case "start":
+                var turn = sfs.GetInt("turn");
+                var idPlayer1 = sfs.GetInt("idPlayer1");
+                var idPlayer2 = sfs.GetInt("idPlayer2");
+                var namePlayer1 = sfs.GetUtfString("namePlayer1");
+                var namePlayer2 = sfs.GetUtfString("namePlayer2");
+                if (OnStartGame != null)
+                {
+                    OnStartGame(turn, idPlayer1, idPlayer2, namePlayer1, namePlayer2);
+                }
                 break;
         }
     }
