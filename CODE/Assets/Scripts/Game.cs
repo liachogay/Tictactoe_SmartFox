@@ -45,8 +45,6 @@ public class Game : MonoBehaviour
     private void StartGame(int turnPlayer, int idPlayer1, int idPlayer2, string namePlayer1, string namePlayer2)
     {
         _contentButton.gameObject.SetActive(true);
-        string a = turnPlayer + " " + idPlayer1 + " " + idPlayer2;
-        Debug.Log(a);
         if (SmartFoxController.Instance.SmartFox.MySelf.Id == turnPlayer)
         {
             SetBoardeEnable(new bool[9] { true, true, true, true, true, true, true, true, true });

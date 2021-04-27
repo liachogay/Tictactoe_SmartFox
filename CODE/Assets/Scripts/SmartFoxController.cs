@@ -88,7 +88,7 @@ public class SmartFoxController
         SmartFox.Send(new CreateRoomRequest(roomSettings, true, SmartFox.LastJoinedRoom));
     }
 
-    public void JoinRoomRequest(int idRoom)
+    public void JoinRoomRequest(string idRoom)
     {
         Debug.Log("Press join room: " + idRoom);
         SmartFox.Send(new JoinRoomRequest(idRoom, "", SmartFox.LastJoinedRoom.Id, false));
@@ -285,6 +285,12 @@ public class SmartFoxController
                     OnStartGame(turn, idPlayer1, idPlayer2, namePlayer1, namePlayer2);
                 }
                 break;
+            case "tie":
+                Debug.Log("two player is draw");
+                break;
+            case "win":
+                Debug.Log("winner: " + sfs.GetInt("winner"));
+                break;
         }
     }
 
@@ -298,6 +304,7 @@ public class SmartFoxController
         room.IsGame = true;
         room.GroupId = "games";
         room.MaxUsers = 2;
+        room.MaxVariables = 10;
         room.Extension = new RoomExtension("TicTacToeExtension", "TicTacToe.TicTacToeExtension");
         return room;
     }

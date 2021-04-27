@@ -60,7 +60,7 @@ public class Lobby : MonoBehaviour
             if (item.IsHidden || !item.IsGame || item.IsPasswordProtected || _dictIdToObjectRoom.ContainsKey(idRoom)) continue;
             Button button = Instantiate(_joinRoomButton, _parentContentRoom);
             Text text = button.GetComponentInChildren<Text>();
-            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(item.Id));
+            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(item.Name));
             text.text = item.Name;
             Canvas.ForceUpdateCanvases();
             _scrollRectRoom.verticalNormalizedPosition = 0f;
@@ -81,7 +81,7 @@ public class Lobby : MonoBehaviour
             if (item.IsHidden || !item.IsGame || item.IsPasswordProtected) continue;
             Button button = Instantiate(_joinRoomButton, _parentContentRoom);
             Text text = button.GetComponentInChildren<Text>();
-            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(item.Id));
+            button.onClick.AddListener(() => SmartFoxController.Instance.JoinRoomRequest(item.Name));
             text.text = item.Name;
             Canvas.ForceUpdateCanvases();
             _scrollRectRoom.verticalNormalizedPosition = 0f;
