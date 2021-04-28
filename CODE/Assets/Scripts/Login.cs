@@ -1,10 +1,14 @@
+using Sfs2X.Entities.Data;
+using Sfs2X.Requests;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Login : MonoBehaviour
 {
     [SerializeField] private InputField _userName;
+    [SerializeField] private InputField _pass;
+    [SerializeField] private InputField _passChange;
 
     private void Awake()
     {
@@ -14,17 +18,25 @@ public class Login : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //SmartFoxController.Instance.Initialize();
+        SmartFoxController.Instance.Initialize();
     }
 
     private void Update()
     {
-        SmartFoxController.Instance.SmartFox.ProcessEvents();
+        if (SmartFoxController.Instance.SmartFox != null)
+        {
+            SmartFoxController.Instance.SmartFox.ProcessEvents();
+        }
+    }
+
+    public void SignUpButton()
+    {
+        SmartFoxController.Instance.SignUpRequest(_userName.text, _pass.text);
     }
 
     public void LoginButton()
     {
-        SmartFoxController.Instance.LoginRequest(_userName.text);
+        SmartFoxController.Instance.LoginRequest(_userName.text, _pass.text);
     }
     /// <summary>
     /// Use for notificate user login success or not
@@ -34,7 +46,7 @@ public class Login : MonoBehaviour
         Debug.Log("User is login: " + value);
         if (value)
         {
-            SceneManager.LoadScene(SceneName.LOBBY);
+            //SceneManager.LoadScene(SceneName.LOBBY);
         }
     }
 

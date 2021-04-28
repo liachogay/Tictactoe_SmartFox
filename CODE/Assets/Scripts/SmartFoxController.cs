@@ -2,7 +2,6 @@ using Sfs2X;
 using Sfs2X.Core;
 using Sfs2X.Entities;
 using Sfs2X.Entities.Data;
-using Sfs2X.Entities.Variables;
 using Sfs2X.Requests;
 using Sfs2X.Util;
 using System.Collections.Generic;
@@ -44,6 +43,7 @@ public class SmartFoxController
     const string zone = "BasicExamples";
 
     private string name = "";
+    private string pass = "";
     private int IDPlayer = -1;
 
     private SmartFoxController()
@@ -71,12 +71,25 @@ public class SmartFoxController
     public delegate void StartGame(int turnPlayer, int idPlayer1, int idPlayer2, string namePlayer1, string namePlayer2);
     public static StartGame OnStartGame = null;
 
-    public void LoginRequest(string userName)
+    public delegate void ContentUpdate(string content);
+    public static ContentUpdate OnContentUpdate = null;
+
+    public void SignUpRequest(string userName, string _pass)
     {
         name = userName;
-        Initialize();
+        pass = _pass;
+        ISFSObject sfs = new SFSObject();
+        sfs.PutUtfString("username", name);
+        sfs.PutUtfString("password", pass);
+        SmartFox.Send(new ExtensionRequest("signup", sfs));
     }
 
+    public void LoginRequest(string userName, string _pass)
+    {
+        name = userName;
+        pass = _pass;
+        SmartFox.Send(new LoginRequest(name, pass, zone));
+    }
     public void PublicMessageRequest(string contentSend)
     {
         SmartFox.Send(new PublicMessageRequest(contentSend));
@@ -145,7 +158,6 @@ public class SmartFoxController
         if ((bool)evt.Params["success"])
         {
             Debug.Log("Connection sucessfully");
-            SmartFox.Send(new LoginRequest(name, "", zone));
         }
         else
         {
@@ -179,7 +191,9 @@ public class SmartFoxController
 
     private void OnLoginError(BaseEvent evt)
     {
+        Debug.Log("Login failed");
         OnLoginSuccess(false);
+        _Reset();
     }
 
     private void OnPublicMessage(BaseEvent evt)
@@ -290,6 +304,19 @@ public class SmartFoxController
                 break;
             case "win":
                 Debug.Log("winner: " + sfs.GetInt("winner"));
+                break;
+            case "signup":
+                if (sfs.GetBool("success"))
+                    Debug.Log("Success, thanks for registering");
+                else
+                    Debug.Log("SignUp Error:" + sfs.GetUtfString("error"));
+                break;
+            case "test":
+                Debug.Log(sfs.GetInt("test"));
+                if (OnContentUpdate != null)
+                {
+                    OnContentUpdate(sfs.GetInt("test").ToString());
+                }
                 break;
         }
     }

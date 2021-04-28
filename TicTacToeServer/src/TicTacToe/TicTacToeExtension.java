@@ -8,6 +8,7 @@ public class TicTacToeExtension extends SFSExtension {
 		this.addRequestHandler("move", MoveHandler.class);
 		this.addRequestHandler("ready", ReadyHandler.class);
 		this.addRequestHandler("getSpotEmpty", GetSpotEmptyHandler.class);
+		trace("Tictactoe extension init done");
 	}
 
 }
