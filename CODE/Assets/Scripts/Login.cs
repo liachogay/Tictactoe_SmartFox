@@ -1,7 +1,4 @@
-using Sfs2X.Entities.Data;
-using Sfs2X.Requests;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Login : MonoBehaviour
@@ -31,7 +28,7 @@ public class Login : MonoBehaviour
 
     public void SignUpButton()
     {
-        SmartFoxController.Instance.SignUpRequest(_userName.text, _pass.text);
+        SmartFoxController.Instance.SignUpRequest(_userName.text, _pass.text, _passChange.text);
     }
 
     public void LoginButton()

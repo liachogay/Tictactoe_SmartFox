@@ -38,7 +38,7 @@ public class SmartFoxController
 
     private bool _isInitialized = false;
 
-    const string IP = "127.0.0.1";
+    const string IP = "45.77.175.60";
     const int PORT = 9933;
     const string zone = "BasicExamples";
 
@@ -74,21 +74,28 @@ public class SmartFoxController
     public delegate void ContentUpdate(string content);
     public static ContentUpdate OnContentUpdate = null;
 
-    public void SignUpRequest(string userName, string _pass)
+    public void SignUpRequest(string userName, string _pass, string captcha)
     {
         name = userName;
         pass = _pass;
         ISFSObject sfs = new SFSObject();
-        sfs.PutUtfString("username", name);
-        sfs.PutUtfString("password", pass);
-        SmartFox.Send(new ExtensionRequest("signup", sfs));
+        sfs.PutUtfString("userName", name);
+        sfs.PutUtfString("pass", pass);
+        sfs.PutUtfString("deviceID", SystemInfo.deviceUniqueIdentifier.Trim());
+        sfs.PutUtfString("captcha", captcha.Trim());
+        sfs.PutBool("isGuest", false);
+        SmartFox.Send(new ExtensionRequest("register", sfs));
     }
 
     public void LoginRequest(string userName, string _pass)
     {
         name = userName;
         pass = _pass;
-        SmartFox.Send(new LoginRequest(name, pass, zone));
+        ISFSObject sfsObject = new SFSObject();
+        sfsObject.PutUtfString("deviceID", SystemInfo.deviceUniqueIdentifier.Trim());
+        sfsObject.PutBool("isGuest", true);
+        sfsObject.PutBool("anonymous", false);
+        SmartFox.Send(new LoginRequest(name, pass, zone, sfsObject));
     }
     public void PublicMessageRequest(string contentSend)
     {
@@ -145,6 +152,7 @@ public class SmartFoxController
             SmartFox.AddEventListener(SFSEvent.USER_EXIT_ROOM, OnUserExitRoom);
             SmartFox.AddEventListener(SFSEvent.EXTENSION_RESPONSE, OnExtensionResponse);
             SmartFox.AddEventListener(SFSEvent.ROOM_VARIABLES_UPDATE, OnRoomVariableUpdate);
+            SFSErrorCodes.SetErrorMessage(200, "Sorry {0}, you don't seem to be a human user. Nice try!");
 
             SmartFox.Connect(IP, PORT);
 
@@ -158,6 +166,13 @@ public class SmartFoxController
         if ((bool)evt.Params["success"])
         {
             Debug.Log("Connection sucessfully");
+            ISFSObject sfs = new SFSObject();
+            sfs.PutUtfString("userName", name);
+            sfs.PutUtfString("pass", pass);
+            sfs.PutUtfString("deviceID", SystemInfo.deviceUniqueIdentifier.Trim());
+            sfs.PutBool("isGuest", false);
+            sfs.PutBool("anonymous", true);
+            SmartFox.Send(new LoginRequest("", "", zone, sfs));
         }
         else
         {
@@ -181,8 +196,9 @@ public class SmartFoxController
     {
         OnLoginSuccess(true);
         User user = (User)(evt.Params["user"]);
-
+        ISFSObject loginData = (ISFSObject)evt.Params["data"];
         name = user.Name;
+        SmartFox.Send(new ExtensionRequest("captcha", new SFSObject()));
         if (SmartFox.RoomList.Count > 0)
         {
             SmartFox.Send(new JoinRoomRequest(SmartFox.RoomList[0]));
@@ -305,11 +321,14 @@ public class SmartFoxController
             case "win":
                 Debug.Log("winner: " + sfs.GetInt("winner"));
                 break;
-            case "signup":
+            case "register":
                 if (sfs.GetBool("success"))
                     Debug.Log("Success, thanks for registering");
                 else
-                    Debug.Log("SignUp Error:" + sfs.GetUtfString("error"));
+                {
+                    Debug.Log("SignUp Error:" + sfs.GetUtfString("errorMessage"));
+                    SmartFox.Send(new ExtensionRequest("captcha", new SFSObject()));
+                }
                 break;
             case "test":
                 Debug.Log(sfs.GetInt("test"));
@@ -317,6 +336,9 @@ public class SmartFoxController
                 {
                     OnContentUpdate(sfs.GetInt("test").ToString());
                 }
+                break;
+            case "captcha":
+                Debug.Log("captcha received:  " + sfs.GetUtfString("captcha"));
                 break;
         }
     }

@@ -861,6 +861,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _userName: {fileID: 2056799853}
   _pass: {fileID: 114688129}
+  _passChange: {fileID: 1428749747}
 --- !u!20 &519420031
 Camera:
   m_ObjectHideFlags: 0
